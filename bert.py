@@ -7,12 +7,6 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 import os
 
-# TODOS:
-#clean up code
-#separate visualizations from actual ml stuff for clarity
-#look into tokenizer replacement
-
-
 def prepare_data(df):
     #as usual in machine learning, we have to split up the data into training and validation sets
     train_df, val_df = train_test_split(
