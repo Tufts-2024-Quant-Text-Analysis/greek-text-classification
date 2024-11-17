@@ -41,7 +41,7 @@ def iter_lines(title, urn, tree, dir):
 
 def create_df(dir):
     data = []
-    files = get_files(dir)
+    files = get_files("data/" + dir)
 
     for f, urn in files:
         tree = etree.parse(f)

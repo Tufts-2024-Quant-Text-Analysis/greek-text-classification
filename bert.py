@@ -14,6 +14,7 @@ import os
 
 
 def prepare_data(df):
+    #as usual in machine learning, we have to split up the data into training and validation sets
     train_df, val_df = train_test_split(
         df, 
         test_size=0.2, 
@@ -24,7 +25,8 @@ def prepare_data(df):
     return train_df, val_df
 
 #dataloaders split up the data set into batches, which allows for better efficiency & processing
-def create_dataloaders(texts, labels, tokenizer, batch_size=8):
+#note that batch size is defaulted to 16, you can increase or decrease this to get better speed or accuracy, respectively
+def create_dataloaders(texts, labels, tokenizer, batch_size=16):
     encodings = tokenizer(
         texts.tolist(),
         truncation=True,
@@ -49,9 +51,10 @@ def create_dataloaders(texts, labels, tokenizer, batch_size=8):
 
 #here the actual training takes place, keep in mind a lot of this code is for visualizing the training progress
 def train_model(model, train_loader, val_loader, device, num_epochs=3):
-    optimizer = AdamW(model.parameters(), lr=2e-5) #lr = learning rate
+    optimizer = AdamW(model.parameters(), lr=2e-5) #lr = learning rate, can adjust this as needed
     best_val_accuracy = 0
     
+    #it is reccomended to do 3-5 epochs when fine-tuning bert, we default to 3 epochs
     for epoch in range(num_epochs):
         model.train()
         total_train_loss = 0
@@ -59,7 +62,7 @@ def train_model(model, train_loader, val_loader, device, num_epochs=3):
         train_total = 0
         
         print(f"\nEpoch {epoch+1}/{num_epochs}")
-        train_pbar = tqdm(train_loader, desc="Training") #tqdm is the library that we're using for the progress bar
+        train_pbar = tqdm(train_loader, desc="Training") #this is making the progress bar
         
         for batch in train_pbar:
             input_ids = batch[0].to(device)
@@ -68,16 +71,18 @@ def train_model(model, train_loader, val_loader, device, num_epochs=3):
             
             optimizer.zero_grad()
             
+            #get the outputs 
             outputs = model(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
                 labels=labels
             ) 
             
+            #get the loss (which helps us understand how much error we have)
             loss = outputs.loss
-            total_train_loss += loss.item()
             
-            # calculate accuracy
+            # calculate accuracy & total loss
+            total_train_loss += loss.item()
             predictions = torch.argmax(outputs.logits, dim=-1)
             train_correct += (predictions == labels).sum().item()
             train_total += labels.size(0)
@@ -87,6 +92,7 @@ def train_model(model, train_loader, val_loader, device, num_epochs=3):
                 f"Training - Loss: {loss.item():.4f}, Acc: {100 * train_correct/train_total:.2f}%"
             )
             
+            #backpropogate aka: update the model with what we've learned
             loss.backward() 
             optimizer.step()
         
@@ -105,15 +111,18 @@ def train_model(model, train_loader, val_loader, device, num_epochs=3):
                 attention_mask = batch[1].to(device)
                 labels = batch[2].to(device)
                 
+                #again, getting the outputs of the model
                 outputs = model(
                     input_ids=input_ids,
                     attention_mask=attention_mask,
                     labels=labels
                 )
                 
+                #again, we get the loss
                 loss = outputs.loss
                 total_val_loss += loss.item()
                 
+                #calculating how well our predictions did
                 predictions = torch.argmax(outputs.logits, dim=-1)
                 val_correct += (predictions == labels).sum().item()
                 val_total += labels.size(0)
@@ -156,7 +165,7 @@ def main():
     pd.set_option('display.max_colwidth', None)
     df = pd.read_pickle("./bert_corpus.pickle")
 
-    device = torch.device('cuda')
+    device = torch.device('cuda') #CHANGE THIS LINE from 'cuda' to 'cpu' if you are not running on a gpu!
 
     # load model and tokenizer
     model_name = "pranaydeeps/Ancient-Greek-BERT"
