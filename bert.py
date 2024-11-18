@@ -156,8 +156,7 @@ def predict_text(texts, model, tokenizer, device):
         return predictions.cpu().numpy()
 
 def main():
-    pd.set_option('display.max_colwidth', None)
-    df = pd.read_pickle("./bert_corpus.pickle")
+
 
     device = torch.device('cuda') #CHANGE THIS LINE from 'cuda' to 'cpu' if you are not running on a gpu!
 
@@ -177,6 +176,9 @@ def main():
     else:
         print("No saved model found. Training from scratch.")
 
+        pd.set_option('display.max_colwidth', None)
+        df = pd.read_pickle("./bert_corpus.pickle")
+        
         # prepare data
         train_df, val_df = prepare_data(df)
         
